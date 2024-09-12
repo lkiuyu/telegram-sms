@@ -18,11 +18,11 @@ jobs:
       fail-fast: false
       matrix:
         target:
-          - { os: linux, arch: 386, name: linux-386 }
+          # - { os: linux, arch: 386, name: linux-386 }
           - { os: linux, arch: amd64, name: linux-amd64 }
-          - { os: linux, arch: arm, name: linux-arm }
-          - { os: linux, arch: arm64, name: linux-arm64 }
-          - { os: linux, arch: riscv64, name: linux-riscv64 }
+          # - { os: linux, arch: arm, name: linux-arm }
+          # - { os: linux, arch: arm64, name: linux-arm64 }
+          # - { os: linux, arch: riscv64, name: linux-riscv64 }
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -35,11 +35,23 @@ jobs:
           go-version: 1.23
         id: go
 
+      - name: Building libqmi
+        run: |
+          # Remove this step once libqmi 1.36 is available in the Ubuntu repository.
+          sudo apt-get update -y
+          sudo apt-get install -y meson ninja-build pkg-config help2man libglib2.0-dev libgudev-1.0-dev libqrtr-glib-dev
+          git clone https://gitlab.freedesktop.org/mobile-broadband/libqmi.git
+          cd libqmi
+          meson setup build --prefix=/usr --buildtype=release -Dmbim_qmux=false -Dgtk_doc=false -Dintrospection=false -Dbash_completion=false
+          ninja -C build
+          sudo ninja -j$(nproc) -C build install
+          cd ..
+
       - name: Build for ${{ matrix.target.name }}
         run: |
           go generate ./...
           VERSION=$(git describe --always --tags --match "v*" --dirty="-dev")
-          CGO_ENABLED=0 GOOS=${{ matrix.target.os }} GOARCH=${{ matrix.target.arch }} go build -trimpath -ldflags="-w -s -X main.Version=${VERSION}" -o telegram-sms-${{ matrix.target.name }}
+          CGO_ENABLED=1 GOARCH=${{ matrix.target.arch }} go build -trimpath -ldflags="-w -s -X main.Version=${VERSION}" -o telegram-sms-${{ matrix.target.name }}
 
       - name: Upload ${{ matrix.target.name }} to Artifact
         uses: actions/upload-artifact@v4

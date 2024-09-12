@@ -21,6 +21,7 @@ Revision: %s
 IMEI: %s
 Signal: %d
 Network: %s
+Operator: %s
 ICCID: %s
 EID: %s
 `
@@ -31,8 +32,9 @@ EID: %s
 		revision, _ := m.GetRevision()
 		imei, _ := m.GetImei()
 		signal, _ := m.GetSignalQuality()
-		network, _ := m.GetOperatorName()
-		ICCID, _ := m.GetICCID()
+		operator, _ := m.GetOperatorName()
+		operatorCode, _ := m.GetOperatorCode()
+		iccid, _ := m.GetIccid()
 
 		message += fmt.Sprintf(
 			template,
@@ -41,8 +43,9 @@ EID: %s
 			util.EscapeText(revision),
 			fmt.Sprintf("`%s`", imei),
 			signal,
-			util.EscapeText(network),
-			fmt.Sprintf("`%s`", ICCID),
+			util.EscapeText(util.LookupCarrierName(operatorCode)),
+			util.EscapeText(operator),
+			fmt.Sprintf("`%s`", iccid),
 			fmt.Sprintf("`%s`", m.Eid))
 	}
 	return c.Send(message, &telebot.SendOptions{ParseMode: telebot.ModeMarkdownV2})
